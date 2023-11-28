@@ -45,7 +45,7 @@ router.post("/register",
         })
         
         // JWT発行
-        const token = await jwt.sign(
+        const token = jwt.sign(
             {
                 email,
             },
@@ -60,6 +60,45 @@ router.post("/register",
         });
     }
 )
+
+// ログイン用API
+router.post("/login", async(req, res) => {
+    const { email, password } = req.body;
+
+    const user = User.find((user) => user.email === email);
+    if(!user){
+        return res.status(400).json([
+            {
+                message:"そのユーザーは存在していません"
+            }
+        ])
+    }
+
+    // パスワードの復号と照合
+    const isMatch = await bcrypt.compare(password, user.password);
+    if(!isMatch) {
+        return res.status(400).json([
+            {
+                message:"パスワードが異なります。"
+            }
+        ])
+    }
+    
+    // JWT発行
+    const token = await jwt.sign(
+        {
+            email,
+        },
+        process.env.SECRET_KEY,
+        {
+            expiresIn:"24h",
+        }
+    )
+
+    return res.json({
+        token:token,
+    });
+})
 
 // DB確認api
 router.get("/allUsers", (req, res) => {
